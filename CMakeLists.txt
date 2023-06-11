@@ -8,6 +8,6 @@ find_package(glfw3 3.3 REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW 2.2 REQUIRED)
 
-add_executable(tetris main.cpp)
+add_executable(tetris main.cpp shaderprogram.cpp)
 
 target_link_libraries(tetris glfw GL GLEW)

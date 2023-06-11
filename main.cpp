@@ -20,27 +20,36 @@ class Game: public Engine {
 
 public:
 	Game(): scene(
-		glm::perspective( glm::radians( 90.0f ), 1.0f, 1.0f, 90.0f ), //Wyliczenie macierzy rzutowania
+		glm::perspective( glm::radians( 90.0f ), 1.0f, 1.0f, 50.0f ),
 		glm::lookAt(
 			glm::vec3( 0.0f, 0.0f, -10.0f ),
 			glm::vec3( 0.0f, 0.0f, 0.0f ),
 			glm::vec3( 0.0f, 1.0f, 0.0f )
-		) //Wyliczenie macierzy widoku
+		)
 	) {
 		this->sp = new ShaderProgram( "v_constant.glsl", NULL, "f_constant.glsl" );
 
 		this->cube = new Cube();
-		this->scene.objects.push_back( ( new GameObject( cube ) )->translate( { -2, -2, 0 } ) );
 		this->scene.objects.push_back( ( new GameObject( cube ) )->translate( { -2, 2, 0 } ) );
-		this->scene.objects.push_back( ( new GameObject( cube ) )->translate( { 2, -2, 0 } ) );
-		this->scene.objects.push_back( ( new GameObject( cube ) )->translate( { 0, -2, 0 } ) );
 		this->scene.objects.push_back( ( new GameObject( cube ) )->translate( { 2, 2, 0 } ) );
+
+		this->scene.objects.push_back(
+			( new GameObject( NULL, {
+				//( new GameObject( cube ) )->translate( { -2, 0, 0 } ),
+				( new GameObject( cube ) )->translate( { 0, 0, 0 } )->scale( { 3, 1, 1 } ),
+				//( new GameObject( cube ) )->translate( { 2, 0, 0 } ),
+				( new GameObject( cube ) )->translate( { -2, -2, 0 } ),
+			} ) )->translate( { 0, -2, 0 } )
+		);
 	}
 
 	~Game() {
 		delete this->cube;
 
 		for ( auto &obj : this->scene.objects ) {
+			for ( auto &subobj : obj->subobjects ) {
+				delete subobj;
+			}
 			delete obj;
 		}
 

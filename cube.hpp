@@ -238,3 +238,21 @@ public:
 
 	}
 };
+
+class CubeWire: public Model {
+public:
+	CubeWire(): Model(
+		CubeInternal::vertices,
+		CubeInternal::vertexCount,
+		CubeInternal::colors,
+		CubeInternal::normals
+	) {
+
+	}
+
+	virtual void drawSolid( ShaderProgram* sp, bool smooth = false ) {
+		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+		Model::drawSolid( sp, smooth );
+		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+	}
+};

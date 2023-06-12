@@ -25,7 +25,7 @@ protected:
 	}
 
 public:
-	void drawSolid( ShaderProgram* sp, bool smooth = false ) {
+	virtual void drawSolid( ShaderProgram* sp, bool smooth = false ) {
 		GLuint spVertices = sp->a( "vertex" );
 		GLuint spNormals = sp->a( "normal" );
 		GLuint spColors = sp->a( "color" );

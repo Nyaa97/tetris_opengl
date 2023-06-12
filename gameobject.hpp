@@ -2,19 +2,16 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/ext.hpp>
-#include <glm/gtx/string_cast.hpp>
 
 #include <vector>
-#include <iostream>
 
 #include "model.hpp"
 
 class GameObject {
 	Model* model;
-	glm::mat4 M;
 
 public:
+	glm::mat4 M;
 	std::vector<GameObject*> subobjects;
 
 	GameObject( Model* model, std::vector<GameObject*> subobjects = {} )
@@ -33,6 +30,10 @@ public:
 		return this;
 	}
 
+	GameObject* scale( float scale ) {
+		return this->scale( glm::vec3( scale ) );
+	}
+
 	GameObject* scale( glm::vec3 scale ) {
 		this->M = glm::scale( this->M, scale );
 
@@ -47,7 +48,7 @@ public:
 
 	void draw( ShaderProgram* sp, glm::mat4 parent = glm::mat4( 1.0f ) ) {
 		glm::mat4 m = parent * this->M;
-		if ( this->model ) {
+		if ( sp && this->model ) {
 			glUniformMatrix4fv( sp->u( "M" ), 1, false, glm::value_ptr( m ) );
 			this->model->drawSolid( sp );
 		}

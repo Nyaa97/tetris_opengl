@@ -14,6 +14,7 @@
 
 #include "model.hpp"
 #include "cube.hpp"
+#include "cube2.hpp"
 #include "engine.hpp"
 #include "gameobject.hpp"
 #include "scene.hpp"
@@ -101,7 +102,7 @@ struct TetrisBlock {
 				b.x > 9
 				|| b.x < 0
 				|| b.y < 0
-				|| board[b.x * 200 + b.y * 10 + b.z]
+				|| ( b.y < 20 && board[b.x * 200 + b.y * 10 + b.z] )
 			) {
 				for ( auto &b : blocks ) {
 					b.x -= nx;
@@ -163,7 +164,7 @@ struct TetrisBlock {
 				b.z > 9
 				|| b.z < 0
 				|| b.y < 0
-				|| board[b.x * 200 + b.y * 10 + b.z]
+				|| ( b.y < 20 && board[b.x * 200 + b.y * 10 + b.z] )
 			) {
 				for ( auto &b : blocks ) {
 					b.z -= nz;
@@ -194,7 +195,7 @@ struct TetrisBlock {
 			if (
 				( b.x + dir ) > 9
 				|| ( b.x + dir ) < 0
-				|| board[( b.x + dir ) * 200 + b.y * 10 + b.z]
+				|| ( b.y < 20 && board[( b.x + dir ) * 200 + b.y * 10 + b.z] )
 			) {
 				return false;
 			}
@@ -212,7 +213,7 @@ struct TetrisBlock {
 			if (
 				( b.z + dir ) > 9
 				|| ( b.z + dir ) < 0
-				|| board[b.x * 200 + b.y * 10 + ( b.z + dir )]
+				|| ( b.y < 20 && board[b.x * 200 + b.y * 10 + ( b.z + dir )] )
 			) {
 				return false;
 			}
@@ -248,8 +249,9 @@ struct TetrisBlock {
 
 class Game: public Engine {
 	Cube* cube;
+	Cube2* cube2;
 	CubeWire* cubewire;
-	ShaderProgram* sp;
+	ShaderProgram* sp, *spCube;
 	Scene scene;
 	float time1, time2;
 	bool* board;
@@ -287,8 +289,10 @@ public:
 		glEnable( GL_DEPTH_TEST );
 
 		this->sp = new ShaderProgram( "v_constant.glsl", NULL, "f_constant.glsl" );
+		this->spCube = new ShaderProgram( "v_cube.glsl", NULL, "f_cube.glsl" );
 
 		this->cube = new Cube();
+		this->cube2 = new Cube2();
 		this->cubewire = new CubeWire();
 		this->spawnBlock();
 
@@ -307,16 +311,16 @@ public:
 		this->blocks = ( new GameObject( NULL, {} ) )->scale( .6f );
 
 		this->bg = ( new GameObject( NULL, {
-			( new GameObject( cubewire ) )
+			( new GameObject( this->cubewire ) )
 				->translate( { -1, -1, 9 } )
 				->scale( { 10, 20, 10 } ),
 
-			( new GameObject( cube ) )
+			( new GameObject( this->cube ) )
 				->translate( { -1, -21, 9 } )
 				->scale( { 10, .1f, 10 } )
 				->rotate( 180, { 1.0f, 0, 0 } ),
 
-			( new GameObject( cube ) )
+			( new GameObject( this->cube ) )
 				->translate( { -1, -1, 19 } )
 				->scale( { 10, 20, .1f } )
 				->rotate( 180, { 1.0f, 0, 0 } )
@@ -336,6 +340,7 @@ public:
 			delete obj;
 		}
 
+		delete this->cube2;
 		delete this->cube;
 		delete this->sp;
 	}
@@ -439,7 +444,7 @@ public:
 
 		for ( auto &sb : cur.blocks ) {
 			this->curm->subobjects.push_back(
-				( new GameObject( cube ) )
+				( new GameObject( cube2, {}, this->spCube ) )
 					->translate( { ( sb.x - 5 ) * 2, ( sb.y * 2 ) - 20, sb.z * 2 } )
 			);
 		}
@@ -679,18 +684,7 @@ public:
 			time1 = 0;
 
 			if ( cur.checkDown( this->board ) ) {
-				for ( auto &obj : this->curm->subobjects ) {
-					delete obj;
-				}
-
-				this->curm->subobjects.clear();
-
-				for ( auto &sb : cur.blocks ) {
-					this->curm->subobjects.push_back(
-						( new GameObject( cube ) )
-							->translate( { ( sb.x - 5 ) * 2, ( sb.y * 2 ) - 20, sb.z * 2 } )
-					);
-				}
+				this->recreateBlockModel();
 
 				/*for ( auto &block : curm->subobjects ) {
 					block->translate( { 0, -2, 0 } );
@@ -725,9 +719,8 @@ public:
 						}
 
 						this->recreateAllBlocks();
+						--y;
 					}
-
-					--y;
 				}
 
 				this->spawnBlock();

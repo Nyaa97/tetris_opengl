@@ -9,13 +9,14 @@
 
 class GameObject {
 	Model* model;
+	ShaderProgram* sp;
 
 public:
 	glm::mat4 M;
 	std::vector<GameObject*> subobjects;
 
-	GameObject( Model* model, std::vector<GameObject*> subobjects = {} )
-		: model( model ), M( 1.0f ), subobjects( subobjects ) {
+	GameObject( Model* model, std::vector<GameObject*> subobjects = {}, ShaderProgram* sp = nullptr )
+		: model( model ), M( 1.0f ), subobjects( subobjects ), sp( sp ) {
 	}
 
 	GameObject* translate( glm::vec3 offset ) {
@@ -46,8 +47,10 @@ public:
 		return this;
 	}
 
-	void draw( ShaderProgram* sp, glm::mat4 parent = glm::mat4( 1.0f ) ) {
+	void draw( ShaderProgram* spParent = nullptr, glm::mat4 parent = glm::mat4( 1.0f ) ) {
 		glm::mat4 m = parent * this->M;
+		ShaderProgram* sp = this->sp ?: spParent;
+
 		if ( sp && this->model ) {
 			glUniformMatrix4fv( sp->u( "M" ), 1, false, glm::value_ptr( m ) );
 			this->model->drawSolid( sp );
@@ -58,9 +61,11 @@ public:
 		}
 	}
 
-	void drawWire( ShaderProgram* sp, glm::mat4 parent = glm::mat4( 1.0f ) ) {
+	void drawWire( ShaderProgram* spParent = nullptr, glm::mat4 parent = glm::mat4( 1.0f ) ) {
 		glm::mat4 m = parent * this->M;
-		if ( this->model ) {
+		ShaderProgram* sp = this->sp ?: spParent;
+
+		if ( sp && this->model ) {
 			glUniformMatrix4fv( sp->u( "M" ), 1, false, glm::value_ptr( m ) );
 			this->model->drawWire( sp );
 		}

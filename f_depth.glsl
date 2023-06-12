@@ -7,6 +7,6 @@ out vec4 pixelColor;
 
 void main(){
     // Not really needed, OpenGL does it anyway
-    //fragmentdepth = gl_FragCoord.z;
-    pixelColor = vec4( vec3( gl_FragCoord ), 1 );
+    float fragmentdepth = gl_FragCoord.z;
+    pixelColor = vec4( vec3( gl_FragCoord.z ), 1 );
 }

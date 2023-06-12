@@ -15,11 +15,9 @@ out vec4 sCoord;
 
 
 void main() {
-
-
 	iColor = color;
 
-    sCoord = DepthBiasMVP * vertex;
+    sCoord = DepthBiasMVP * vec4( ( M * vertex ).xyz, 1 );
 
 	gl_Position = P * V * M * vertex;
 }

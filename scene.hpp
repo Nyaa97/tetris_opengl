@@ -12,7 +12,9 @@ public:
 	}
 
 	void draw( ShaderProgram* sp ) {
-		this->setPV( sp );
+		if ( sp ) {
+			this->setPV( sp );
+		}
 
 		for ( auto &obj : this->objects ) {
 			obj->draw( sp );

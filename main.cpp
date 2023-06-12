@@ -298,9 +298,9 @@ public:
 		Engine::init( 1000, 1000, "Tetris" );
 		glEnable( GL_DEPTH_TEST );
 
-		//this->sp = new ShaderProgram( "v_constant.glsl", NULL, "f_constant.glsl" );
-		//this->spCube = new ShaderProgram( "v_cube.glsl", NULL, "f_cube.glsl" );
-		this->sp = this->spCube = this->spDepth = new ShaderProgram( "v_depth.glsl", NULL, "f_depth.glsl" );
+		this->sp = new ShaderProgram( "v_constant.glsl", NULL, "f_constant.glsl" );
+		this->spCube = new ShaderProgram( "v_cube.glsl", NULL, "f_cube.glsl" );
+		this->spDepth = new ShaderProgram( "v_depth.glsl", NULL, "f_depth.glsl" );
 
 		this->cube = new Cube();// { 0.2f, 0.2f, 0.8f } );
 		this->cube2 = new Cube2();
@@ -320,7 +320,7 @@ public:
 			}
 		}*/
 
-		this->blocks = ( new GameObject( NULL, {} ) )->scale( .6f );
+		this->blocks = ( new GameObject( NULL, {}, this->spCube ) )->scale( .6f );
 
 		this->bg = ( new GameObject( NULL, {
 			/*( new GameObject( this->cubewire ) )
@@ -377,7 +377,7 @@ public:
 			( new GameObject( this->cubeWhite ) )
 				->translate( { -1, -20.9, -0.9 } )
 				->scale( { 10.1f, .1, .1 } )
-		} ) )->scale( .6f );
+		}, this->sp ) )->scale( .6f );
 
 		for ( int i = 19; i > -20; i -= 2 ) {
 			this->bg->subobjects.push_back(
@@ -842,7 +842,8 @@ public:
 		/*GLuint FramebufferName = 0;
 		glGenFramebuffers(1, &FramebufferName);
 		glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
 		// Depth texture. Slower than a depth buffer, but you can sample it later in your shader
 		GLuint depthTexture;
 		glGenTextures(1, &depthTexture);
@@ -857,12 +858,12 @@ public:
 
 		glDrawBuffer(GL_NONE); // No color buffer is drawn to.*/
 		this->spDepth->use();
-		glm::vec3 lightInvDir = glm::vec3(0.5f,2,-2);
+		glm::vec3 lightInvDir = glm::vec3(0,0,-1);
 
 		// Compute the MVP matrix from the light's point of view
 		glm::vec3 lightPos(-1, -1, -15);
-		glm::mat4 depthProjectionMatrix = this->scene.P;// ::perspective<float>(45.0f, 1.0f, 2.0f, 50.0f);
-		glm::mat4 depthViewMatrix = this->scene.V; //glm::lookAt(lightPos, lightPos-lightInvDir, glm::vec3(0,1,0));
+		glm::mat4 depthProjectionMatrix = glm::perspective<float>(45.0f, 1.0f, 2.0f, 50.0f);
+		glm::mat4 depthViewMatrix = glm::lookAt(lightPos, lightPos-lightInvDir, glm::vec3(0,1,0));
 		// glm::mat4 depthProjectionMatrix = glm::ortho<float>(-10,10,-10,10,-10,20);
 		// glm::mat4 depthViewMatrix = glm::lookAt(lightInvDir, glm::vec3(0,0,0), glm::vec3(0,1,0));
 		glm::mat4 depthModelMatrix = glm::mat4(1.0);
@@ -881,6 +882,7 @@ public:
 
 		/*glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 		this->sp->use();
 		glUniformMatrix4fv(this->spDepth->u("DepthBiasMVP"), 1, GL_FALSE, &depthBiasMVP[0][0]);
 		glUniform1i(sp->u("sMap"), 4);
@@ -893,31 +895,22 @@ public:
 		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_2D, depthTexture);
 
-		this->draw();*/
+		this->draw();//*/
 	}
 
 	void draw( ShaderProgram* sp = nullptr ) {
-		sp = sp ?: this->sp;
-
-		if ( sp != this->sp ) {
-			for ( auto &obj : this->blocks->subobjects ) {
-				obj->sp = sp;
-			}
-		} else {
+		if ( !sp ) {
 			this->spCube->use();
 			scene.setPV( this->spCube );
+			this->sp->use();
+			scene.setPV( this->sp );
+		} else {
+			sp->use();
 		}
 
-		sp->use();
 		scene.draw( sp );
 		if ( this->curm ) {
 			this->curm->draw( sp );
-		}
-		
-		if ( sp != this->sp ) {
-			for ( auto &obj : this->blocks->subobjects ) {
-				obj->sp = this->spCube;
-			}
 		}
 	}
 };

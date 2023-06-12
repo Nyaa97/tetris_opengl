@@ -49,7 +49,7 @@ public:
 
 	void draw( ShaderProgram* spParent = nullptr, glm::mat4 parent = glm::mat4( 1.0f ) ) {
 		glm::mat4 m = parent * this->M;
-		ShaderProgram* sp = this->sp ?: spParent;
+		ShaderProgram* sp = spParent ?: this->sp; // ?: this->sp ?: spParent;
 
 		if ( sp && this->model ) {
 			sp->use();

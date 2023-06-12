@@ -32,5 +32,5 @@ void main() {
 	float nl = clamp( l, 0, 1 );
 	float rv = pow( clamp( dot( mr, mv ), 0, 1 ), 5000 );
 
-	pixelColor = vec4( kb.rgb * nl, kb.a ) + vec4( kr.rgb * rv / 5 , 0 ) + ke;
+	pixelColor = vec4( kb.rgb * nl, kb.a ) + vec4( kr.rgb * rv / 5 , 0 ) + ke / 2;
 }

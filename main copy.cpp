@@ -274,6 +274,8 @@ class Game: public Engine {
 
 	CameraAngle camera;
 
+	GLuint texDepth, fbDepth;
+
 public:
 	Game(): scene(
 		glm::perspective( glm::radians( 90.0f ), 1.0f, 1.0f, 50.0f ),
@@ -413,6 +415,23 @@ public:
 
 		this->scene.objects.push_back( this->blocks );
 		this->scene.objects.push_back( this->bg );
+
+
+		glGenFramebuffers(1, &fbDepth);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbDepth);
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_BACK);
+		glGenTextures(1, &texDepth);
+		glBindTexture(GL_TEXTURE_2D, texDepth);
+		glTexImage2D(GL_TEXTURE_2D, 0,GL_DEPTH_COMPONENT16, 1000, 1000, 0,GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texDepth, 0);
+
+		glDrawBuffer(GL_NONE);
 	}
 
 	~Game() {
@@ -838,34 +857,18 @@ public:
 			time2 -= elapsedTime;
 		}
 
-		// The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
-		GLuint FramebufferName = 0;
-		glGenFramebuffers(1, &FramebufferName);
-		glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
-		// Depth texture. Slower than a depth buffer, but you can sample it later in your shader
-		GLuint depthTexture;
-		glGenTextures(1, &depthTexture);
-		glBindTexture(GL_TEXTURE_2D, depthTexture);
-		glTexImage2D(GL_TEXTURE_2D, 0,GL_DEPTH_COMPONENT16, 1000, 1000, 0,GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTexture, 0);
-
-		glDrawBuffer(GL_NONE); // No color buffer is drawn to.
+		//glBindFramebuffer(GL_FRAMEBUFFER, fbDepth);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0,0,1000,1000);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		this->spDepth->use();
 		glm::vec3 lightInvDir = glm::vec3(0,0,-1);
 
-		// Compute the MVP matrix from the light's point of view
 		glm::vec3 lightPos(-1, -1, -15);
+		//glm::mat4 depthProjectionMatrix = glm::perspective<float>(45.0f, 1.0f, 2.0f, 50.0f);// this->scene.P;//glm::ortho<float>(-10,10,-10,10,-10,20);
+		//glm::mat4 depthViewMatrix = glm::lookAt(lightPos, glm::vec3(-1,-1,-14), glm::vec3(0,1,0));
 		glm::mat4 depthProjectionMatrix = glm::perspective<float>(45.0f, 1.0f, 2.0f, 50.0f);
 		glm::mat4 depthViewMatrix = glm::lookAt(lightPos, lightPos-lightInvDir, glm::vec3(0,1,0));
-		// glm::mat4 depthProjectionMatrix = glm::ortho<float>(-10,10,-10,10,-10,20);
-		// glm::mat4 depthViewMatrix = glm::lookAt(lightInvDir, glm::vec3(0,0,0), glm::vec3(0,1,0));
 		glm::mat4 depthModelMatrix = glm::mat4(1.0);
 		glm::mat4 depthMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
 		glm::mat4 biasMatrix(
@@ -874,28 +877,27 @@ public:
 			0.0, 0.0, 0.5, 0.0,
 			0.5, 0.5, 0.5, 1.0
 		);
-		glm::mat4 depthBiasMVP = biasMatrix*depthMVP;
-		// Send our transformation to the currently bound shader,
-		// in the "MVP" uniform
+		glm::mat4 depthBiasMVP = depthMVP;
 		glUniformMatrix4fv(this->spDepth->u("depthMVP"), 1, GL_FALSE, &depthMVP[0][0]);
 		this->draw(this->spDepth);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, 1000, 1000);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		this->sp->use();
+		/*this->sp->use();
 		glUniformMatrix4fv(this->spDepth->u("DepthBiasMVP"), 1, GL_FALSE, &depthBiasMVP[0][0]);
 		glUniform1i(sp->u("sMap"), 4);
 		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, depthTexture);
+		glBindTexture(GL_TEXTURE_2D, texDepth);
 
 		this->spCube->use();
 		glUniformMatrix4fv(this->spDepth->u("DepthBiasMVP"), 1, GL_FALSE, &depthBiasMVP[0][0]);
 		glUniform1i(sp->u("sMap"), 4);
 		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, depthTexture);
+		glBindTexture(GL_TEXTURE_2D, texDepth);
 
-		this->draw();//
+		this->draw();//*/
 	}
 
 	void draw( ShaderProgram* sp = nullptr ) {

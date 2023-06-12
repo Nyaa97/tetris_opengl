@@ -8,5 +8,5 @@ uniform mat4 depthMVP;
 uniform mat4 M;
 
 void main(){
- gl_Position =  depthMVP * M * vertex;
+	gl_Position =  depthMVP * M * vertex;
 }

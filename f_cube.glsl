@@ -13,7 +13,7 @@ in vec4 l3;
 in vec4 v;
 in vec2 iTc;
 
-void main() {	
+void main() {
 	vec4 kb = texture( texBase, iTc );
 	vec4 ke = texture( texEmmisive, iTc );
 	vec4 kn = texture( texNormal, iTc );

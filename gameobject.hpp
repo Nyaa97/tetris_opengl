@@ -52,6 +52,7 @@ public:
 		ShaderProgram* sp = this->sp ?: spParent;
 
 		if ( sp && this->model ) {
+			sp->use();
 			glUniformMatrix4fv( sp->u( "M" ), 1, false, glm::value_ptr( m ) );
 			this->model->drawSolid( sp );
 		}
@@ -66,6 +67,7 @@ public:
 		ShaderProgram* sp = this->sp ?: spParent;
 
 		if ( sp && this->model ) {
+			sp->use();
 			glUniformMatrix4fv( sp->u( "M" ), 1, false, glm::value_ptr( m ) );
 			this->model->drawWire( sp );
 		}

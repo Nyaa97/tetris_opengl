@@ -58,18 +58,18 @@ public:
 		glVertexAttribPointer( spCoords, 2, GL_FLOAT, false, 0, this->coords );
 
 		if ( !this->colors ) {
+			glUniform1i(sp->u("texBase"), 0);
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, this->texBase);
-			glUniform1i(sp->u("texBase"), 0);
+			glUniform1i(sp->u("texEmmisive"), 1);
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_2D, this->texEmmisive);
-			glUniform1i(sp->u("texEmmisive"), 1);
+			glUniform1i(sp->u("texNormal"), 2);
 			glActiveTexture(GL_TEXTURE2);
 			glBindTexture(GL_TEXTURE_2D, this->texNormal);
-			glUniform1i(sp->u("texNormal"), 2);
+			glUniform1i(sp->u("texRoughness"), 3);
 			glActiveTexture(GL_TEXTURE3);
 			glBindTexture(GL_TEXTURE_2D, this->texRoughness);
-			glUniform1i(sp->u("texRoughness"), 3);
 		}
 
 		//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );

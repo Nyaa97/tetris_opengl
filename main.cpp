@@ -29,7 +29,7 @@ struct Vec3Int {
 	int x, y, z;
 };
 
-enum Action {
+enum class Action {
 	NONE,
 	BLOCK_LEFT,
 	BLOCK_RIGHT,
@@ -45,7 +45,16 @@ enum Action {
 	ROTATE_BACK,
 };
 
-enum CameraAngle {
+enum class Animation {
+	NONE,
+	BLOCK_LEFT,
+	BLOCK_RIGHT,
+	BLOCK_FWD,
+	BLOCK_BACK,
+	BLOCK_FALL
+};
+
+enum class CameraAngle {
 	FRONT,
 	LEFT,
 	RIGHT,
@@ -259,6 +268,7 @@ class Game: public Engine {
 	GameObject* blocks;
 	GameObject* bg;
 
+	Animation curA;
 	TetrisBlock cur;
 	GameObject* curm;
 
@@ -346,6 +356,10 @@ public:
 	}
 
 	void createBlock( std::vector<Vec3Int> subblocks ) {
+		/*if ( this->curm ) {
+			delete this->curm;
+		}*/
+
 		this->curm = ( new GameObject( NULL, {} ) )->scale( .6f );
 		cur.blocks.clear();
 
@@ -509,7 +523,7 @@ public:
 
 	void update( float elapsedTime ) {
 		time1 += speedUp ? FACTOR_SPEED_UP * elapsedTime : elapsedTime;
-		while ( !actions.empty() ) {
+		while ( time2 <= 0 && time1 < TIME_STEP && !actions.empty() ) {
 			Action action = actions.top();
 			actions.pop();
 
@@ -598,9 +612,8 @@ public:
 			) {
 				printf( "Left\n" );
 				if ( cur.checkX( this->board, 1 ) ) {
-					for ( auto &block : curm->subobjects ) {
-						block->translate( { 2, 0, 0 } );
-					}
+					curA = Animation::BLOCK_LEFT;
+					time2 += TIME_ANIM_FALL;
 				}
 			} else if (
 				( action == Action::BLOCK_RIGHT && ( camera == CameraAngle::FRONT || camera == CameraAngle::TOP ) )
@@ -609,9 +622,8 @@ public:
 			) {
 				printf( "Right\n" );
 				if ( cur.checkX( this->board, -1 ) ) {
-					for ( auto &block : curm->subobjects ) {
-						block->translate( { -2, 0, 0 } );
-					}
+					curA = Animation::BLOCK_RIGHT;
+					time2 += TIME_ANIM_FALL;
 				}
 			} else if (
 				( action == Action::BLOCK_FWD && ( camera == CameraAngle::FRONT || camera == CameraAngle::TOP ) )
@@ -620,9 +632,8 @@ public:
 			) {
 				printf( "Forward\n" );
 				if ( cur.checkZ( this->board, 1 ) ) {
-					for ( auto &block : curm->subobjects ) {
-						block->translate( { 0, 0, 2 } );
-					}
+					curA = Animation::BLOCK_FWD;
+					time2 += TIME_ANIM_FALL;
 				}
 			} else if (
 				( action == Action::BLOCK_BACK && ( camera == CameraAngle::FRONT || camera == CameraAngle::TOP ) )
@@ -631,9 +642,8 @@ public:
 			) {
 				printf( "Back\n" );
 				if ( cur.checkZ( this->board, -1 ) ) {
-					for ( auto &block : curm->subobjects ) {
-						block->translate( { 0, 0, -2 } );
-					}
+					curA = Animation::BLOCK_BACK;
+					time2 += TIME_ANIM_FALL;
 				}
 			} else if (
 				(
@@ -684,16 +694,17 @@ public:
 			time1 = 0;
 
 			if ( cur.checkDown( this->board ) ) {
-				this->recreateBlockModel();
+				// this->recreateBlockModel();
 
 				/*for ( auto &block : curm->subobjects ) {
 					block->translate( { 0, -2, 0 } );
 				}*/
-				//time2 += TIME_ANIM_FALL;
+				curA = Animation::BLOCK_FALL;
+				time2 += TIME_ANIM_FALL;
 			} else if ( !cur.isAboveBoard() ) {
 				for ( auto &block : this->curm->subobjects ) {
 					this->blocks->subobjects.push_back( block );
-					std::cout << glm::to_string( block->M ) << std::endl;
+					//std::cout << glm::to_string( block->M ) << std::endl;
 				}
 
 				this->curm->subobjects.clear();
@@ -734,13 +745,30 @@ public:
 				this->recreateAllBlocks();
 			}
 		} else if ( time2 > 0 ) {
-			float offset = ( std::min( elapsedTime, time2 ) / TIME_ANIM_FALL ) * -2;
-			for ( auto &block : curm->subobjects ) {
-				block->translate( { 0, offset, 0 } );
+			if ( curA == Animation::BLOCK_FALL ) {
+				float offset = ( std::min( elapsedTime, time2 ) / TIME_ANIM_FALL ) * -2;
+				for ( auto &block : curm->subobjects ) {
+					block->translate( { 0, offset, 0 } );
+				}
+			} else if ( curA == Animation::BLOCK_LEFT || curA == Animation::BLOCK_RIGHT ) {
+				float offset = ( std::min( elapsedTime, time2 ) / TIME_ANIM_FALL )
+					* ( curA == Animation::BLOCK_RIGHT ? -2 : 2 );
+				for ( auto &block : curm->subobjects ) {
+					block->translate( { offset, 0, 0 } );
+				}
+			} else if ( curA == Animation::BLOCK_FWD || curA == Animation::BLOCK_BACK ) {
+				float offset = ( std::min( elapsedTime, time2 ) / TIME_ANIM_FALL )
+					* ( curA == Animation::BLOCK_BACK ? -2 : 2 );
+				for ( auto &block : curm->subobjects ) {
+					block->translate( { 0, 0, offset } );
+				}
 			}
 
 			time2 -= elapsedTime;
 		}
+
+		this->spCube->use();
+		scene.setPV( this->spCube );
 
 		this->sp->use();
 		scene.draw( this->sp );

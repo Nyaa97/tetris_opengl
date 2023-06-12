@@ -12,11 +12,15 @@ public:
 	}
 
 	void draw( ShaderProgram* sp ) {
-		glUniformMatrix4fv( sp->u( "P" ), 1, false, glm::value_ptr( P ) );
-		glUniformMatrix4fv( sp->u( "V" ), 1, false, glm::value_ptr( V ) );
+		this->setPV( sp );
 
 		for ( auto &obj : this->objects ) {
 			obj->draw( sp );
 		}
+	}
+
+	void setPV( ShaderProgram* sp ) {
+		glUniformMatrix4fv( sp->u( "P" ), 1, false, glm::value_ptr( P ) );
+		glUniformMatrix4fv( sp->u( "V" ), 1, false, glm::value_ptr( V ) );
 	}
 };

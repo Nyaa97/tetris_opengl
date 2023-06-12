@@ -2,23 +2,21 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/ext.hpp>
-#include <glm/gtx/string_cast.hpp>
 
 #include <vector>
-#include <iostream>
 
 #include "model.hpp"
 
 class GameObject {
 	Model* model;
-	glm::mat4 M;
+	ShaderProgram* sp;
 
 public:
+	glm::mat4 M;
 	std::vector<GameObject*> subobjects;
 
-	GameObject( Model* model, std::vector<GameObject*> subobjects = {} )
-		: model( model ), M( 1.0f ), subobjects( subobjects ) {
+	GameObject( Model* model, std::vector<GameObject*> subobjects = {}, ShaderProgram* sp = nullptr )
+		: model( model ), M( 1.0f ), subobjects( subobjects ), sp( sp ) {
 	}
 
 	GameObject* translate( glm::vec3 offset ) {
@@ -33,6 +31,10 @@ public:
 		return this;
 	}
 
+	GameObject* scale( float scale ) {
+		return this->scale( glm::vec3( scale ) );
+	}
+
 	GameObject* scale( glm::vec3 scale ) {
 		this->M = glm::scale( this->M, scale );
 
@@ -45,9 +47,11 @@ public:
 		return this;
 	}
 
-	void draw( ShaderProgram* sp, glm::mat4 parent = glm::mat4( 1.0f ) ) {
+	void draw( ShaderProgram* spParent = nullptr, glm::mat4 parent = glm::mat4( 1.0f ) ) {
 		glm::mat4 m = parent * this->M;
-		if ( this->model ) {
+		ShaderProgram* sp = this->sp ?: spParent;
+
+		if ( sp && this->model ) {
 			glUniformMatrix4fv( sp->u( "M" ), 1, false, glm::value_ptr( m ) );
 			this->model->drawSolid( sp );
 		}
@@ -57,9 +61,11 @@ public:
 		}
 	}
 
-	void drawWire( ShaderProgram* sp, glm::mat4 parent = glm::mat4( 1.0f ) ) {
+	void drawWire( ShaderProgram* spParent = nullptr, glm::mat4 parent = glm::mat4( 1.0f ) ) {
 		glm::mat4 m = parent * this->M;
-		if ( this->model ) {
+		ShaderProgram* sp = this->sp ?: spParent;
+
+		if ( sp && this->model ) {
 			glUniformMatrix4fv( sp->u( "M" ), 1, false, glm::value_ptr( m ) );
 			this->model->drawWire( sp );
 		}

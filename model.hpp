@@ -54,7 +54,6 @@ public:
 		glVertexAttribPointer( spNormals, 4, GL_FLOAT, false, 0, this->normals );
 		//else glVertexAttribPointer(1,4,GL_FLOAT,false,0,vertexNormals);
 		// glVertexAttribPointer(2,4,GL_FLOAT,false,0,texCoords);
-		glVertexAttribPointer( spColors, 4, GL_FLOAT, false, 0, this->colors );
 		glVertexAttribPointer( spCoords, 2, GL_FLOAT, false, 0, this->coords );
 
 		if ( !this->colors ) {
@@ -70,6 +69,8 @@ public:
 			glUniform1i(sp->u("texRoughness"), 3);
 			glActiveTexture(GL_TEXTURE3);
 			glBindTexture(GL_TEXTURE_2D, this->texRoughness);
+		} else {
+			glVertexAttribPointer( spColors, 4, GL_FLOAT, false, 0, this->colors );
 		}
 
 		//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );

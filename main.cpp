@@ -257,7 +257,7 @@ struct TetrisBlock {
 };
 
 class Game: public Engine {
-	Cube* cube;
+	Cube* cube, *cubeWhite;
 	Cube2* cube2;
 	CubeWire* cubewire;
 	ShaderProgram* sp, *spCube;
@@ -279,7 +279,7 @@ public:
 		glm::perspective( glm::radians( 90.0f ), 1.0f, 1.0f, 50.0f ),
 		glm::lookAt(
 			glm::vec3( -1.0f, -1.0f, -15.0f ),
-			glm::vec3( -1.0f, -1.0f, -9.0f ),
+			glm::vec3( -1.0f, -1.0f, -5.0f ),
 			glm::vec3( 0.0f, 1.0f, 0.0f )
 		)
 	) {
@@ -301,9 +301,10 @@ public:
 		this->sp = new ShaderProgram( "v_constant.glsl", NULL, "f_constant.glsl" );
 		this->spCube = new ShaderProgram( "v_cube.glsl", NULL, "f_cube.glsl" );
 
-		this->cube = new Cube();
+		this->cube = new Cube();// { 0.2f, 0.2f, 0.8f } );
 		this->cube2 = new Cube2();
 		this->cubewire = new CubeWire();
+		this->cubeWhite = new Cube( { 1.0f, 1.0f, 1.0f } );
 		this->spawnBlock();
 
 		/*for ( int x = 0; x < 10; ++x ) {
@@ -321,20 +322,93 @@ public:
 		this->blocks = ( new GameObject( NULL, {} ) )->scale( .6f );
 
 		this->bg = ( new GameObject( NULL, {
-			( new GameObject( this->cubewire ) )
+			/*( new GameObject( this->cubewire ) )
 				->translate( { -1, -1, 9 } )
-				->scale( { 10, 20, 10 } ),
+				->scale( { 10, 20, 10 } ),*/
 
 			( new GameObject( this->cube ) )
 				->translate( { -1, -21, 9 } )
-				->scale( { 10, .1f, 10 } )
+				->scale( { 10.1f, .1f, 10.1f } )
 				->rotate( 180, { 1.0f, 0, 0 } ),
 
 			( new GameObject( this->cube ) )
 				->translate( { -1, -1, 19 } )
-				->scale( { 10, 20, .1f } )
-				->rotate( 180, { 1.0f, 0, 0 } )
+				->scale( { 10.1f, 20.1f, .1f } )
+				->rotate( 180, { 1.0f, 0, 0 } ),
+
+			( new GameObject( this->cube ) )
+				->translate( { -11, -1, -1 } )
+				->scale( { .1f, 20, .1f } )
+				->rotate( 180, { 1.0f, 0, 0 } ),
+
+			( new GameObject( this->cube ) )
+				->translate( { -11, 19, 9 } )
+				->scale( { .1f, .1f, 10.1f } )
+				->rotate( 180, { 1.0f, 0, 0 } ),
+
+			( new GameObject( this->cube ) )
+				->translate( { 9, -1, -1 } )
+				->scale( { .1f, 20, .1f } )
+				->rotate( 180, { 1.0f, 0, 0 } ),
+
+			( new GameObject( this->cube ) )
+				->translate( { 9, 19, 9 } )
+				->scale( { .1f, .1f, 10.1f } )
+				->rotate( 180, { 1.0f, 0, 0 } ),
+
+			( new GameObject( this->cube ) )
+				->translate( { -1, 19, -1 } )
+				->scale( { 10.1f, .1f, .1f } )
+				->rotate( 180, { 1.0f, 0, 0 } ),
+
+			( new GameObject( this->cubeWhite ) )
+				->translate( { -1, -20.9, 18.9 } )
+				->scale( { 10.1f, .1f, .1f } ),
+
+			( new GameObject( this->cubeWhite ) )
+				->translate( { 8.9, -20.9, 9 } )
+				->scale( { .1, .1, 10.1f } ),
+
+			( new GameObject( this->cubeWhite ) )
+				->translate( { -10.9, -20.9, 9 } )
+				->scale( { .1, .1, 10.1f } ),
+
+			( new GameObject( this->cubeWhite ) )
+				->translate( { -1, -20.9, -0.9 } )
+				->scale( { 10.1f, .1, .1 } )
 		} ) )->scale( .6f );
+
+		for ( int i = 19; i > -20; i -= 2 ) {
+			this->bg->subobjects.push_back(
+				( new GameObject( this->cubeWhite ) )
+					->translate( { -1, i, 18.9 } )
+					->scale( { 10.1f, .1f, .1f } )
+			);
+		}
+
+		for ( int i = 9; i >= -11; i -= 2 ) {
+			this->bg->subobjects.push_back(
+				( new GameObject( this->cubeWhite ) )
+					->translate( { i, -1, 18.9 } )
+					->scale( { .1f, 20, .1 } )
+			);
+		}
+
+		for ( int i = 17; i > -1; i -= 2 ) {
+			this->bg->subobjects.push_back(
+				( new GameObject( this->cubeWhite ) )
+					->translate( { -1, -20.9, i } )
+					->scale( { 10.1f, .1f, .1f } )
+			);
+		}
+
+		for ( int i = 7; i > -11; i -= 2 ) {
+			this->bg->subobjects.push_back(
+				( new GameObject( this->cubeWhite ) )
+					->translate( { i, -20.9, 9 } )
+					->scale( { .1f, .1f, 10.1f } )
+			);
+		}
 
 		this->scene.objects.push_back( this->blocks );
 		this->scene.objects.push_back( this->bg );
@@ -524,6 +598,7 @@ public:
 	void update( float elapsedTime ) {
 		time1 += speedUp ? FACTOR_SPEED_UP * elapsedTime : elapsedTime;
 		while ( time2 <= 0 && time1 < TIME_STEP && !actions.empty() ) {
+			this->recreateBlockModel();
 			Action action = actions.top();
 			actions.pop();
 
@@ -691,20 +766,15 @@ public:
 		this->recreateAllBlocks();
 
 		if ( time2 <= 0 && time1 >= TIME_STEP ) {
+			this->recreateBlockModel();
 			time1 = 0;
 
 			if ( cur.checkDown( this->board ) ) {
-				// this->recreateBlockModel();
-
-				/*for ( auto &block : curm->subobjects ) {
-					block->translate( { 0, -2, 0 } );
-				}*/
 				curA = Animation::BLOCK_FALL;
 				time2 += TIME_ANIM_FALL;
 			} else if ( !cur.isAboveBoard() ) {
 				for ( auto &block : this->curm->subobjects ) {
 					this->blocks->subobjects.push_back( block );
-					//std::cout << glm::to_string( block->M ) << std::endl;
 				}
 
 				this->curm->subobjects.clear();

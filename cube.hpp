@@ -229,13 +229,22 @@ namespace CubeInternal {
 
 class Cube: public Model {
 public:
-	Cube(): Model(
+	Cube( glm::vec3 color = { -1, -1, -1 } ): Model(
 		CubeInternal::vertices,
 		CubeInternal::vertexCount,
 		CubeInternal::colors,
 		CubeInternal::normals
 	) {
+		if ( color.r >= 0 ) {
+			this->colors = new float[this->vertexCount * 4];
 
+			for ( size_t i = 0; i < this->vertexCount; i++ ) {
+				this->colors[4 * i + 0] = color.r;
+				this->colors[4 * i + 1] = color.g;
+				this->colors[4 * i + 2] = color.b;
+				this->colors[4 * i + 3] = 1.0f;
+			}
+		}
 	}
 };
 

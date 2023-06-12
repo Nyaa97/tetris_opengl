@@ -3,8 +3,8 @@
 #include "gameobject.hpp"
 
 class Scene {
-	glm::mat4 P, V;
 public:
+	glm::mat4 P, V;
 	std::vector<GameObject*> objects;
 
 	Scene( glm::mat4 P, glm::mat4 V, std::vector<GameObject*> objects = {} )

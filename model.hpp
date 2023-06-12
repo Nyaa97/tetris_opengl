@@ -55,6 +55,7 @@ public:
 		//else glVertexAttribPointer(1,4,GL_FLOAT,false,0,vertexNormals);
 		// glVertexAttribPointer(2,4,GL_FLOAT,false,0,texCoords);
 		glVertexAttribPointer( spCoords, 2, GL_FLOAT, false, 0, this->coords );
+		
 
 		if ( !this->colors ) {
 			glUniform1i(sp->u("texBase"), 0);

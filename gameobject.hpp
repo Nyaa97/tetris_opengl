@@ -9,11 +9,11 @@
 
 class GameObject {
 	Model* model;
-	ShaderProgram* sp;
 
 public:
 	glm::mat4 M;
 	std::vector<GameObject*> subobjects;
+	ShaderProgram* sp;
 
 	GameObject( Model* model, std::vector<GameObject*> subobjects = {}, ShaderProgram* sp = nullptr )
 		: model( model ), M( 1.0f ), subobjects( subobjects ), sp( sp ) {

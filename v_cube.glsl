@@ -15,10 +15,12 @@ out vec4 v;
 out vec2 iTc;
 
 void main() {
-	float w = 6;//4.5;
-	vec4 lp1 = vec4( -w, 0, w - 2, 1 );
-	vec4 lp2 = vec4( w, 0, w - 2, 1 );
-	vec4 lp3 = vec4( 0, 0, -2, 1 );
+	
+
+	float w = 20;//4.5;
+	vec4 lp1 = vec4( -w, 0, 2, 1 );
+	vec4 lp2 = vec4( w, 0, 2, 1 );
+	vec4 lp3 = vec4( 0, 0, 6 - w, 1 );
 	vec4 vp = V * M * vertex;
 
 	l1 = normalize( lp1 - vp );

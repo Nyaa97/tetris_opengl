@@ -1,18 +1,25 @@
-#version 330
 
-//Zmienne jednorodne
+#version 420
+
 uniform mat4 P;
 uniform mat4 V;
 uniform mat4 M;
+uniform mat4 DepthBiasMVP;
 
-//Atrybuty
-in vec4 vertex; //wspolrzedne wierzcholka w przestrzeni modelu
-in vec4 normal; //wektor normalny w wierzcholku
+in vec4 vertex;
+in vec4 normal;
 in vec4 color;
 
-out vec4 iccolor;
+out vec4 iColor;
+out vec4 sCoord;
 
-void main(void) {
-    gl_Position = P * V * M * vertex;
-    iccolor = color;
+
+void main() {
+
+
+	iColor = color;
+
+    sCoord = DepthBiasMVP * vertex;
+
+	gl_Position = P * V * M * vertex;
 }

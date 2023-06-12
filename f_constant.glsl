@@ -1,11 +1,20 @@
-#version 330
+#version 420
 
-in vec4 iccolor;
-out vec4 pixelColor; //Zmienna wyjsciowa fragment shadera. Zapisuje sie do niej ostateczny (prawie) kolor piksela
+uniform sampler2DShadow sMap;
 
+in vec4 iColor;
+in vec4 sCoord;
 
-//uniform vec4 color=vec4(1,1,1,1);
+out vec4 pixelColor;
 
-void main(void) {
-	pixelColor = iccolor;
+void main() {
+	float visibility = 1.0;
+	if ( texture( sMap, vec3(sCoord.xy, (sCoord.z)/sCoord.w) ) < sCoord.z - 0.005 ) {
+			visibility = 0.5;
+			pixelColor = vec4( 1, 1, 0, 1 );
+	}
+
+	//visibility = texture( sMap, vec3(sCoord.xy, (sCoord.z)/sCoord.w) );
+
+	else pixelColor = vec4( texture( sMap, vec3(sCoord.xy, (sCoord.z)/sCoord.w) ), visibility * iColor.gb, 1) ;//vec4( iColor.rgb * visibility, 1 );
 }

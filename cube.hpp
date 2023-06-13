@@ -259,9 +259,9 @@ public:
 
 	}
 
-	virtual void drawSolid( ShaderProgram* sp, bool smooth = false ) {
+	virtual void drawSolid( ShaderProgram* sp ) {
 		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-		Model::drawSolid( sp, smooth );
+		Model::drawSolid( sp );
 		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 	}
 };

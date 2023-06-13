@@ -261,7 +261,7 @@ class Game: public Engine {
 	Cube2* cube2;
 	CubeWire* cubewire;
 	ShaderProgram* sp, *spCube, *spDepth;
-	Scene scene;
+	Scene scene, light1, light2;
 	float time1, time2;
 	bool* board;
 
@@ -274,6 +274,7 @@ class Game: public Engine {
 
 	CameraAngle camera;
 
+	GLuint fbDepth1, texDepth1, fbDepth2, texDepth2;
 public:
 	Game(): scene(
 		glm::perspective( glm::radians( 90.0f ), 1.0f, 1.0f, 50.0f ),
@@ -281,6 +282,20 @@ public:
 			glm::vec3( -1.0f, -1.0f, -15.0f ),
 			glm::vec3( -1.0f, -1.0f, -5.0f ),
 			glm::vec3( 0.0f, 1.0f, 0.0f )
+		)
+	), light1(
+		glm::ortho<float>( -20, 20, -20, 20, 1, 50 ),
+		glm::lookAt(
+			glm::vec3( 5, 10, -15 ),
+			glm::vec3( -1, 0, 10 ),
+			glm::vec3( 0, 1, 0 )
+		)
+	), light2(
+		glm::ortho<float>( -20, 20, -20, 20, 1, 50 ),
+		glm::lookAt(
+			glm::vec3( 3, 13, -15 ),
+			glm::vec3( -1, 0, 10 ),
+			glm::vec3( 0, 1, 0 )
 		)
 	) {
 		srand( time( NULL ) );
@@ -297,28 +312,45 @@ public:
 	void init() {
 		Engine::init( 1000, 1000, "Tetris" );
 		glEnable( GL_DEPTH_TEST );
+		glEnable( GL_TEXTURE_2D );
 
 		this->sp = new ShaderProgram( "v_constant.glsl", NULL, "f_constant.glsl" );
 		this->spCube = new ShaderProgram( "v_cube.glsl", NULL, "f_cube.glsl" );
 		this->spDepth = new ShaderProgram( "v_depth.glsl", NULL, "f_depth.glsl" );
 
-		this->cube = new Cube();// { 0.2f, 0.2f, 0.8f } );
+		this->cube = new Cube();
 		this->cube2 = new Cube2();
 		this->cubewire = new CubeWire();
 		this->cubeWhite = new Cube( { 1.0f, 1.0f, 1.0f } );
 		this->spawnBlock();
 
-		/*for ( int x = 0; x < 10; ++x ) {
-			for ( int y = 0; y < 20; ++y ) {
-				for ( int z = 0; z < 10; ++z ) {
-					this->scene2.objects.push_back(
-						( new GameObject( cubewire ) )
-							->scale( .6f )
-							->translate( { 2 * ( x - 5 ),  2 * ( y - 10 ), 2 * 9 } )
-					);
-				}
-			}
-		}*/
+		this->fbDepth1 = this->texDepth1 = 0;
+		glGenFramebuffers(1, &this->fbDepth1);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbDepth1);
+		glGenTextures(1, &this->texDepth1);
+		glBindTexture(GL_TEXTURE_2D, texDepth1);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 1000, 1000, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbDepth1);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texDepth1, 0);
+    	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		this->fbDepth2 = this->texDepth2 = 0;
+		glGenFramebuffers(1, &this->fbDepth2);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbDepth2);
+		glGenTextures(1, &this->texDepth2);
+		glBindTexture(GL_TEXTURE_2D, texDepth2);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 1000, 1000, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbDepth2);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texDepth2, 0);
+    	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		this->blocks = ( new GameObject( NULL, {}, this->spCube ) )->scale( .6f );
 
@@ -413,6 +445,9 @@ public:
 
 		this->scene.objects.push_back( this->blocks );
 		this->scene.objects.push_back( this->bg );
+		this->scene.objects.push_back( this->curm );
+		this->light1.objects = this->scene.objects;
+		this->light2.objects = this->scene.objects;
 	}
 
 	~Game() {
@@ -487,12 +522,6 @@ public:
 		Vec3Int offset = { rand() % ( 10 - mx ), 20, rand() % ( 10 - mz ) };
 
 		for ( auto &sb : subblocks ) {
-			// this->curm->subobjects.push_back(
-			// 	( new GameObject( cube ) )
-			// 		->translate( { sb.x * 2, sb.y * 2, sb.z * 2 } )
-			// 		->translate( { ( offset.x - 5 ) * 2, offset.y, offset.z * 2 } )
-			// );
-
 			this->cur.blocks.push_back( { sb.x + offset.x, sb.y + offset.y, sb.z + offset.z } );
 		}
 
@@ -542,7 +571,7 @@ public:
 	void spawnBlock() {
 		int x = rand() % 7;
 
-		switch ( 1 ) {//rand() % 5 ) {
+		switch ( rand() % 5 ) {
 		case 0:
 			// x x x
 			//   x
@@ -556,11 +585,6 @@ public:
 			// x x
 			// x x
 			this->createBlock( {
-				// { 0, 9, 0 }, { 1, 9, 0 }, { 2, 9, 0 }, { 3, 9, 0 }, { 4, 9, 0 },
-				// { 0, 8, 0 }, { 1, 8, 0 }, { 2, 8, 0 }, { 3, 8, 0 }, { 4, 8, 0 },
-				// { 0, 7, 0 }, { 1, 7, 0 }, { 2, 7, 0 }, { 3, 7, 0 }, { 4, 7, 0 },
-				// { 0, 6, 0 }, { 1, 6, 0 }, { 2, 6, 0 }, { 3, 6, 0 }, { 4, 6, 0 },
-				// { 0, 5, 0 }, { 1, 5, 0 }, { 2, 5, 0 }, { 3, 5, 0 }, { 4, 5, 0 },
 				{ 0, 4, 0 }, { 1, 4, 0 }, { 2, 4, 0 }, { 3, 4, 0 }, { 4, 4, 0 },
 				{ 0, 3, 0 }, { 1, 3, 0 }, { 2, 3, 0 }, { 3, 3, 0 }, { 4, 3, 0 },
 				{ 0, 2, 0 }, { 1, 2, 0 }, { 2, 2, 0 }, { 3, 2, 0 }, { 4, 2, 0 },
@@ -683,8 +707,8 @@ public:
 				}
 			} else if (
 				( action == Action::BLOCK_LEFT && ( camera == CameraAngle::FRONT || camera == CameraAngle::TOP ) )
-				|| ( action == Action::BLOCK_BACK && ( camera == CameraAngle::LEFT ) )
-				|| ( action == Action::BLOCK_FWD && ( camera == CameraAngle::RIGHT ) )
+				|| ( action == Action::BLOCK_BACK && camera == CameraAngle::LEFT )
+				|| ( action == Action::BLOCK_FWD && camera == CameraAngle::RIGHT )
 			) {
 				printf( "Left\n" );
 				if ( cur.checkX( this->board, 1 ) ) {
@@ -693,10 +717,9 @@ public:
 				}
 			} else if (
 				( action == Action::BLOCK_RIGHT && ( camera == CameraAngle::FRONT || camera == CameraAngle::TOP ) )
-				|| ( action == Action::BLOCK_BACK && ( camera == CameraAngle::RIGHT ) )
-				|| ( action == Action::BLOCK_FWD && ( camera == CameraAngle::LEFT ) )
+				|| ( action == Action::BLOCK_BACK && camera == CameraAngle::RIGHT )
+				|| ( action == Action::BLOCK_FWD && camera == CameraAngle::LEFT )
 			) {
-				printf( "Right\n" );
 				if ( cur.checkX( this->board, -1 ) ) {
 					curA = Animation::BLOCK_RIGHT;
 					time2 += TIME_ANIM_FALL;
@@ -838,89 +861,75 @@ public:
 			time2 -= elapsedTime;
 		}
 
-		// The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
-		/*GLuint FramebufferName = 0;
-		glGenFramebuffers(1, &FramebufferName);
-		glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
-		// Depth texture. Slower than a depth buffer, but you can sample it later in your shader
-		GLuint depthTexture;
-		glGenTextures(1, &depthTexture);
-		glBindTexture(GL_TEXTURE_2D, depthTexture);
-		glTexImage2D(GL_TEXTURE_2D, 0,GL_DEPTH_COMPONENT16, 1000, 1000, 0,GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTexture, 0);
-
-		glDrawBuffer(GL_NONE); // No color buffer is drawn to.*/
-		this->spDepth->use();
-		glm::vec3 lightInvDir = glm::vec3(0,0,-1);
-
-		// Compute the MVP matrix from the light's point of view
-		glm::vec3 lightPos(-1, -1, -15);
-		glm::mat4 depthProjectionMatrix = glm::perspective<float>(45.0f, 1.0f, 2.0f, 50.0f);
-		glm::mat4 depthViewMatrix = glm::lookAt(lightPos, lightPos-lightInvDir, glm::vec3(0,1,0));
-		// glm::mat4 depthProjectionMatrix = glm::ortho<float>(-10,10,-10,10,-10,20);
-		// glm::mat4 depthViewMatrix = glm::lookAt(lightInvDir, glm::vec3(0,0,0), glm::vec3(0,1,0));
-		glm::mat4 depthModelMatrix = glm::mat4(1.0);
-		glm::mat4 depthMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
 		glm::mat4 biasMatrix(
 			0.5, 0.0, 0.0, 0.0,
 			0.0, 0.5, 0.0, 0.0,
 			0.0, 0.0, 0.5, 0.0,
 			0.5, 0.5, 0.5, 1.0
 		);
-		glm::mat4 depthBiasMVP = biasMatrix*depthMVP;
-		// Send our transformation to the currently bound shader,
-		// in the "MVP" uniform
-		glUniformMatrix4fv(this->spDepth->u("depthMVP"), 1, GL_FALSE, &depthMVP[0][0]);
-		this->draw(this->spDepth);
 
-		/*glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glm::mat4 lightPV1 = biasMatrix * this->light1.P * this->light1.V;
+		glm::mat4 lightPV2 = biasMatrix * this->light2.P * this->light2.V;
+
+		glBindFramebuffer(GL_FRAMEBUFFER, this->fbDepth1);
+		glViewport(0, 0, 1000, 1000);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		this->spDepth->use();
+		this->light1.draw(this->spDepth);
+
+		glViewport(0, 0, 1000, 1000);
+		glBindFramebuffer(GL_FRAMEBUFFER, this->fbDepth2);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		this->spDepth->use();
+		this->light2.draw(this->spDepth);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, 1000, 1000);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		this->sp->use();
-		glUniformMatrix4fv(this->spDepth->u("DepthBiasMVP"), 1, GL_FALSE, &depthBiasMVP[0][0]);
-		glUniform1i(sp->u("sMap"), 4);
 		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, depthTexture);
+		glBindTexture(GL_TEXTURE_2D, this->texDepth1);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, this->texDepth2);
+		glUniformMatrix4fv(this->sp->u("LightPV1"), 1, GL_FALSE, &lightPV1[0][0]);
+		glUniform1i(sp->u("sMap1"), 4);
+		glUniformMatrix4fv(this->sp->u("LightPV2"), 1, GL_FALSE, &lightPV2[0][0]);
+		glUniform1i(sp->u("sMap2"), 5);
 
 		this->spCube->use();
-		glUniformMatrix4fv(this->spDepth->u("DepthBiasMVP"), 1, GL_FALSE, &depthBiasMVP[0][0]);
-		glUniform1i(sp->u("sMap"), 4);
 		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, depthTexture);
+		glBindTexture(GL_TEXTURE_2D, this->texDepth1);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, this->texDepth2);
+		glUniformMatrix4fv(this->spCube->u("LightPV1"), 1, GL_FALSE, &lightPV1[0][0]);
+		glUniform1i(spCube->u("sMap1"), 4);
+		glUniformMatrix4fv(this->spCube->u("LightPV2"), 1, GL_FALSE, &lightPV2[0][0]);
+		glUniform1i(spCube->u("sMap2"), 5);
 
-		this->draw();//*/
+		this->draw();
 	}
 
 	void draw( ShaderProgram* sp = nullptr ) {
 		if ( !sp ) {
 			this->spCube->use();
-			scene.setPV( this->spCube );
+			this->scene.setPV( this->spCube );
 			this->sp->use();
-			scene.setPV( this->sp );
+			this->scene.setPV( this->sp );
 		} else {
 			sp->use();
 		}
 
 		scene.draw( sp );
-		if ( this->curm ) {
-			this->curm->draw( sp );
-		}
 	}
 };
 
-//Procedura obsługi błędów
 void error_callback( int error, const char* description ) {
 	fputs( description, stderr );
 }
 
-//Procedura obsługi klawiatury
 void key_callback( GLFWwindow* window, int key, int scancode, int action, int mods ) {
 	if ( action == GLFW_PRESS ) {
 		switch ( key ) {

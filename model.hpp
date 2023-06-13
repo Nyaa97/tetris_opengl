@@ -38,7 +38,7 @@ protected:
 	}
 
 public:
-	virtual void drawSolid( ShaderProgram* sp, bool smooth = false ) {
+	virtual void drawSolid( ShaderProgram* sp ) {
 		GLuint spVertices = sp->a( "vertex" );
 		GLuint spNormals = sp->a( "normal" );
 		GLuint spColors = sp->a( "color" );
@@ -52,10 +52,7 @@ public:
 
 		glVertexAttribPointer( spVertices, 4, GL_FLOAT, false, 0, this->vertices );
 		glVertexAttribPointer( spNormals, 4, GL_FLOAT, false, 0, this->normals );
-		//else glVertexAttribPointer(1,4,GL_FLOAT,false,0,vertexNormals);
-		// glVertexAttribPointer(2,4,GL_FLOAT,false,0,texCoords);
 		glVertexAttribPointer( spCoords, 2, GL_FLOAT, false, 0, this->coords );
-		
 
 		if ( !this->colors ) {
 			glUniform1i(sp->u("texBase"), 0);
@@ -74,20 +71,16 @@ public:
 			glVertexAttribPointer( spColors, 4, GL_FLOAT, false, 0, this->colors );
 		}
 
-		//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 		glDrawArrays( GL_TRIANGLES, 0, this->vertexCount );
-		//glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
 		glDisableVertexAttribArray( spVertices );
 		glDisableVertexAttribArray( spNormals );
 		glDisableVertexAttribArray( spColors );
 	}
 
-	void drawWire( ShaderProgram* sp, bool smooth = false ) {
+	void drawWire( ShaderProgram* sp ) {
 		glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-
-		this->drawSolid( sp, smooth );
-
+		this->drawSolid( sp );
 		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 	}
 };

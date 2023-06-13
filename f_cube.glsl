@@ -33,9 +33,6 @@ void main() {
 	float mr2 = pow( clamp( dot( reflect( -ml2, mn ), mv ), 0, 1 ), 150 );
 	/*float mr3 = pow( clamp( dot( reflect( -ml3, mn ), mv ), 0, 1 ), 500 );*/;
 
-	// float l = /*dot( mn, ml3 ) +*/ dot( mn, ml2 ) + dot( mn, ml1 );
-
-	//float nl = clamp( l, 0, 1 );
 	float rv = clamp( mr1 + mr2, 0, 1 );
 
 	float s = 1;
@@ -50,7 +47,10 @@ void main() {
 		tmp -= 0.5;
 	}
 
+	float l = s * clamp( ( dot( mn, ml2 ) + dot( mn, ml1 ) ) / 2, 0, 1 );
+	float nl = clamp( l, 0.3, 1 );
+
 	rv *= tmp;
 
-	pixelColor = vec4( kb.rgb * s, kb.a ) + vec4( kr.rgb * rv / 5, 0 ) + ke / 2;
+	pixelColor = vec4( kb.rgb * nl, kb.a ) + vec4( kr.rgb * rv / 5, 0 ) + ke / 2;
 }

@@ -24,8 +24,8 @@ void main() {
 	vec4 lp2 = vec4( w, 0, 2, 1 );
 	vec4 lp3 = vec4( 0, 0, 6 - w, 1 );*/
 
-	vec4 lp1 = V * vec4( 5, 10, -15, 1 );
-	vec4 lp2 = V * vec4( 3, 13, -15, 1 );
+	vec4 lp1 = V * vec4( 10, 10, -20, 1 );
+	vec4 lp2 = V * vec4( 8, 13, -20, 1 );
 
 	vec4 vp = V * M * vertex;
 

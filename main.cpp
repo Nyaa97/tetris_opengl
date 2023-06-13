@@ -322,7 +322,6 @@ public:
 		this->cube2 = new Cube2();
 		this->cubewire = new CubeWire();
 		this->cubeWhite = new Cube( { 1.0f, 1.0f, 1.0f } );
-		this->spawnBlock();
 
 		this->fbDepth1 = this->texDepth1 = 0;
 		glGenFramebuffers(1, &this->fbDepth1);
@@ -353,6 +352,9 @@ public:
     	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		this->blocks = ( new GameObject( NULL, {}, this->spCube ) )->scale( .6f );
+
+		this->curm = ( new GameObject( NULL, {} ) )->scale( .6f );
+		this->spawnBlock();
 
 		this->bg = ( new GameObject( NULL, {
 			/*( new GameObject( this->cubewire ) )
@@ -470,7 +472,6 @@ public:
 			delete this->curm;
 		}*/
 
-		this->curm = ( new GameObject( NULL, {} ) )->scale( .6f );
 		cur.blocks.clear();
 
 		int mx = 0, my = 0, mz = 0;
